@@ -1,0 +1,38 @@
+import std/io { println }
+import std/random { Rng }
+import "./lib" { Uuid }
+
+fun main() {
+    let a = Uuid.v4()
+    let b = Uuid.v4()
+    println("v4 a    = ${a.to_string()}")
+    println("v4 b    = ${b.to_string()}")
+    println("v4 distinct = ${!a.equals(b)}")
+    println("v4 ver  = ${a.version()} variant ${a.variant()}")
+
+    let t = Uuid.v7()
+    println("v7      = ${t.to_string()}")
+    println("v7 ver  = ${t.version()} variant ${t.variant()}")
+
+    let one = Uuid.v1()
+    println("v1      = ${one.to_string()}")
+    println("v1 ver  = ${one.version()} variant ${one.variant()}")
+
+    println("nil     = ${Uuid.nil().to_string()}")
+    println("max     = ${Uuid.max().to_string()}")
+
+    let rng = Rng.new(42)
+    let fixed = Uuid.v4_with(rng)
+    println("v4_with(seed 42) = ${fixed.to_string()}")
+
+    let text = a.to_string()
+    match Uuid.parse(text) {
+        Ok(back) -> println("roundtrip equals = ${back.equals(a)}"),
+        Err(e) -> println("parse error: ${e}"),
+    }
+
+    match Uuid.parse("not-a-uuid") {
+        Ok(_) -> println("unexpectedly parsed"),
+        Err(e) -> println("rejected: ${e}"),
+    }
+}

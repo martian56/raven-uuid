@@ -1,0 +1,193 @@
+// raven-uuid: RFC 9562 UUID generation and parsing in pure Raven.
+// Versions v1, v4, v7. The no-argument forms seed from entropy and read
+// the clock; the *_with forms take an explicit Rng for reproducible output.
+
+import std/string
+import std/random { Rng }
+import std/time { now_millis }
+
+struct Uuid {
+    bytes: List<Int>,
+}
+
+// 100ns intervals between the Gregorian epoch (1582-10-15) and the Unix epoch.
+fun gregorian_offset() -> Int {
+    return 122192928000000000
+}
+
+fun hex_digits() -> List<String> {
+    return ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"]
+}
+
+fun byte_hex(b: Int) -> String {
+    let d = hex_digits()
+    let hi = d[(b >> 4) & 15]
+    let lo = d[b & 15]
+    return hi.concat(lo)
+}
+
+// Hex character (as an ASCII byte) to its value, or -1 if not hex.
+fun nibble_of(b: Int) -> Int {
+    if b >= 48 && b <= 57 {
+        return b - 48
+    }
+    if b >= 97 && b <= 102 {
+        return b - 87
+    }
+    if b >= 65 && b <= 70 {
+        return b - 55
+    }
+    return -1
+}
+
+fun rand_bytes(rng: Rng, count: Int) -> List<Int> {
+    let out: List<Int> = []
+    let i = 0
+    while i < count {
+        out.push(rng.gen_range(0, 256))
+        i += 1
+    }
+    return out
+}
+
+fun zero_bytes(value: Int) -> List<Int> {
+    let out: List<Int> = []
+    let i = 0
+    while i < 16 {
+        out.push(value)
+        i += 1
+    }
+    return out
+}
+
+impl Uuid {
+    fun nil() -> Uuid {
+        return Uuid { bytes: zero_bytes(0) }
+    }
+
+    fun max() -> Uuid {
+        return Uuid { bytes: zero_bytes(255) }
+    }
+
+    fun v4() -> Uuid {
+        return Uuid.v4_with(Rng.from_entropy())
+    }
+
+    fun v7() -> Uuid {
+        return Uuid.v7_with(Rng.from_entropy(), now_millis())
+    }
+
+    fun v1() -> Uuid {
+        return Uuid.v1_with(Rng.from_entropy(), now_millis())
+    }
+
+    fun v4_with(rng: Rng) -> Uuid {
+        let b = rand_bytes(rng, 16)
+        b[6] = (b[6] & 15) | 64
+        b[8] = (b[8] & 63) | 128
+        return Uuid { bytes: b }
+    }
+
+    // 48-bit big-endian millisecond timestamp, then random bits.
+    fun v7_with(rng: Rng, unix_ms: Int) -> Uuid {
+        let b = rand_bytes(rng, 16)
+        b[0] = (unix_ms >> 40) & 255
+        b[1] = (unix_ms >> 32) & 255
+        b[2] = (unix_ms >> 24) & 255
+        b[3] = (unix_ms >> 16) & 255
+        b[4] = (unix_ms >> 8) & 255
+        b[5] = unix_ms & 255
+        b[6] = (b[6] & 15) | 112
+        b[8] = (b[8] & 63) | 128
+        return Uuid { bytes: b }
+    }
+
+    // 60-bit timestamp split across time_low/mid/hi, plus a random node
+    // whose multicast bit is set to mark it as not a real MAC address.
+    fun v1_with(rng: Rng, unix_ms: Int) -> Uuid {
+        let ts = unix_ms * 10000 + gregorian_offset()
+        let b = rand_bytes(rng, 16)
+        b[0] = (ts >> 24) & 255
+        b[1] = (ts >> 16) & 255
+        b[2] = (ts >> 8) & 255
+        b[3] = ts & 255
+        b[4] = (ts >> 40) & 255
+        b[5] = (ts >> 32) & 255
+        b[6] = ((ts >> 56) & 15) | 16
+        b[7] = (ts >> 48) & 255
+        b[8] = (b[8] & 63) | 128
+        b[10] = b[10] | 1
+        return Uuid { bytes: b }
+    }
+
+    // Accepts the canonical hyphenated form or a bare 32-hex string.
+    fun parse(s: String) -> Result<Uuid, String> {
+        let n = s.length()
+        let nibbles: List<Int> = []
+        let i = 0
+        while i < n {
+            let c = __str_byte_at(s, i)
+            if c != 45 {
+                let v = nibble_of(c)
+                if v < 0 {
+                    return Err("invalid hex character")
+                }
+                nibbles.push(v)
+            }
+            i += 1
+        }
+        if nibbles.len() != 32 {
+            return Err("expected 32 hex digits")
+        }
+        let bytes: List<Int> = []
+        let j = 0
+        while j < 32 {
+            bytes.push((nibbles[j] << 4) | nibbles[j + 1])
+            j += 2
+        }
+        return Ok(Uuid { bytes })
+    }
+
+    fun to_string(self) -> String {
+        let out = ""
+        let i = 0
+        while i < 16 {
+            if i == 4 || i == 6 || i == 8 || i == 10 {
+                out = out.concat("-")
+            }
+            out = out.concat(byte_hex(self.bytes[i]))
+            i += 1
+        }
+        return out
+    }
+
+    fun version(self) -> Int {
+        return (self.bytes[6] >> 4) & 15
+    }
+
+    fun variant(self) -> Int {
+        return (self.bytes[8] >> 6) & 3
+    }
+
+    fun is_nil(self) -> Bool {
+        let i = 0
+        while i < 16 {
+            if self.bytes[i] != 0 {
+                return false
+            }
+            i += 1
+        }
+        return true
+    }
+
+    fun equals(self, other: Uuid) -> Bool {
+        let i = 0
+        while i < 16 {
+            if self.bytes[i] != other.bytes[i] {
+                return false
+            }
+            i += 1
+        }
+        return true
+    }
+}
