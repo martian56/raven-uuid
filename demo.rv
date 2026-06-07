@@ -1,5 +1,6 @@
 import std/io { println }
 import std/random { Rng }
+import std/collections
 import "./lib" { Uuid }
 
 fun main() {
@@ -35,4 +36,23 @@ fun main() {
         Ok(_) -> println("unexpectedly parsed"),
         Err(e) -> println("rejected: ${e}"),
     }
+
+    // Eq: `==` and `!=` work directly.
+    println("a == a  = ${a == a}")
+    println("a == b  = ${a == b}")
+
+    // Ord: compare returns -1 / 0 / 1.
+    println("a cmp a = ${a.compare(a)}")
+
+    // Hash + Eq: a Uuid is a valid Map (and Set) key.
+    let by_id: Map<Uuid, String> = Map.new()
+    by_id.set(a, "alpha")
+    by_id.set(b, "beta")
+    println("map size  = ${by_id.len()}")
+    println("lookup a  = ${by_id.get_or(a, "missing")}")
+
+    // Helpers.
+    println("simple  = ${a.simple()}")
+    println("urn     = ${a.urn()}")
+    println("nil max = ${Uuid.nil().is_nil()} ${Uuid.max().is_max()}")
 }

@@ -148,19 +148,6 @@ impl Uuid {
         return Ok(Uuid { bytes })
     }
 
-    fun to_string(self) -> String {
-        let out = ""
-        let i = 0
-        while i < 16 {
-            if i == 4 || i == 6 || i == 8 || i == 10 {
-                out = out.concat("-")
-            }
-            out = out.concat(byte_hex(self.bytes[i]))
-            i += 1
-        }
-        return out
-    }
-
     fun version(self) -> Int {
         return (self.bytes[6] >> 4) & 15
     }
@@ -180,6 +167,37 @@ impl Uuid {
         return true
     }
 
+    // Whether this UUID is the max UUID (all bits set).
+    fun is_max(self) -> Bool {
+        let i = 0
+        while i < 16 {
+            if self.bytes[i] != 255 {
+                return false
+            }
+            i += 1
+        }
+        return true
+    }
+
+    // The 32-hex-digit form with no hyphens, e.g. "550e8400e29b...".
+    fun simple(self) -> String {
+        let out = ""
+        let i = 0
+        while i < 16 {
+            out = out.concat(byte_hex(self.bytes[i]))
+            i += 1
+        }
+        return out
+    }
+
+    // The RFC 9562 URN form, e.g. "urn:uuid:550e8400-e29b-...".
+    fun urn(self) -> String {
+        return "urn:uuid:".concat(self.to_string())
+    }
+}
+
+// Two UUIDs are equal when all 16 bytes match. This also powers `==`.
+impl Eq for Uuid {
     fun equals(self, other: Uuid) -> Bool {
         let i = 0
         while i < 16 {
@@ -189,5 +207,55 @@ impl Uuid {
             i += 1
         }
         return true
+    }
+}
+
+// The canonical hyphenated lowercase form, used by `print` and `"${uuid}"`.
+impl ToString for Uuid {
+    fun to_string(self) -> String {
+        let out = ""
+        let i = 0
+        while i < 16 {
+            if i == 4 || i == 6 || i == 8 || i == 10 {
+                out = out.concat("-")
+            }
+            out = out.concat(byte_hex(self.bytes[i]))
+            i += 1
+        }
+        return out
+    }
+}
+
+// Lexicographic order over the 16 bytes: a negative result if `self` sorts
+// before `other`, zero if equal, positive if after. This matches the order of
+// the canonical string form and lets UUIDs be sorted and compared with `<`/`>`.
+impl Ord for Uuid {
+    fun compare(self, other: Uuid) -> Int {
+        let i = 0
+        while i < 16 {
+            if self.bytes[i] < other.bytes[i] {
+                return -1
+            }
+            if self.bytes[i] > other.bytes[i] {
+                return 1
+            }
+            i += 1
+        }
+        return 0
+    }
+}
+
+// A polynomial hash over the bytes, reduced modulo a large prime so it stays a
+// non-negative `Int` and never overflows. It is consistent with `equals` (equal
+// UUIDs hash equal), so a `Uuid` can be a `Map` or `Set` key.
+impl Hash for Uuid {
+    fun hash(self) -> Int {
+        let h = 0
+        let i = 0
+        while i < 16 {
+            h = (h * 31 + self.bytes[i]) % 1000000007
+            i += 1
+        }
+        return h
     }
 }

@@ -15,7 +15,7 @@ deferred to a future crypto package.
 
 ```toml
 [dependencies]
-"github.com/martian56/raven-uuid" = "0.1"
+"github.com/martian56/raven-uuid" = "0.2"
 ```
 
 ## Usage
@@ -62,10 +62,39 @@ let id = Uuid.v4_with(rng)       // deterministic given the seed
 | `Uuid.max()` | All-ones UUID |
 | `Uuid.parse(s)` | Parse a hyphenated or bare 32-hex string, returns `Result<Uuid, String>` |
 | `u.to_string()` | Canonical `8-4-4-4-12` lowercase hex |
+| `u.simple()` | The 32-hex form with no hyphens |
+| `u.urn()` | The `urn:uuid:...` form |
 | `u.version()` | Version number (1, 4, 7, ...) |
 | `u.variant()` | Variant field (2 is the RFC 9562 variant) |
 | `u.is_nil()` | True for the all-zero UUID |
-| `u.equals(other)` | Byte-wise equality |
+| `u.is_max()` | True for the all-ones UUID |
+| `u.equals(other)` | Byte-wise equality (or use `==`) |
+| `u.compare(other)` | Lexicographic order, `-1` / `0` / `1` |
+| `u.hash()` | A stable hash, so a `Uuid` works as a `Map`/`Set` key |
+
+## Traits
+
+`Uuid` implements the core traits, so it behaves like a built-in value:
+
+- **`Eq`**: compare with `==` and `!=`.
+- **`ToString`**: print directly and use in `"${...}"` interpolation.
+- **`Ord`**: order with `compare`, and sort with [std/cmp](https://martian56.github.io/raven/v2/guide/stdlib/cmp/).
+- **`Hash`**: use a `Uuid` as a `Map` or `Set` key.
+
+```raven
+import std/collections
+import "github.com/martian56/raven-uuid" { Uuid }
+
+fun main() {
+    let a = Uuid.v4()
+    let b = Uuid.v4()
+    print(a == b)                       // false
+
+    let names: Map<Uuid, String> = Map.new()
+    names.set(a, "alpha")               // Uuid as a key
+    print(names.get_or(a, "missing"))   // alpha
+}
+```
 
 ## Requirements
 
