@@ -123,6 +123,20 @@ impl Uuid {
     // Accepts the canonical hyphenated form or a bare 32-hex string.
     fun parse(s: String) -> Result<Uuid, String> {
         let n = s.length()
+        if n != 32 && n != 36 {
+            return Err("expected a canonical or bare UUID")
+        }
+        if n == 36 {
+            let i = 0
+            while i < n {
+                let separator = i == 8 || i == 13 || i == 18 || i == 23
+                let hyphen = __str_byte_at(s, i) == 45
+                if separator != hyphen {
+                    return Err("hyphens must use the canonical UUID positions")
+                }
+                i += 1
+            }
+        }
         let nibbles: List<Int> = []
         let i = 0
         while i < n {

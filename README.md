@@ -1,5 +1,7 @@
 # raven-uuid
 
+[![CI](https://github.com/martian56/raven-uuid/actions/workflows/ci.yml/badge.svg)](https://github.com/martian56/raven-uuid/actions/workflows/ci.yml)
+
 UUID generation and parsing for Raven, in pure Raven with no external dependencies.
 
 Supported versions:
@@ -15,12 +17,12 @@ deferred to a future crypto package.
 
 ```toml
 [dependencies]
-"github.com/martian56/raven-uuid" = "0.2"
+"github.com/martian56/raven-uuid" = "v0.2.1"
 ```
 
 ## Usage
 
-```raven
+```rust
 import "github.com/martian56/raven-uuid" { Uuid }
 
 fun main() {
@@ -41,7 +43,7 @@ fun main() {
 For reproducible output (tests), use the `*_with` forms and seed the `Rng`
 yourself:
 
-```raven
+```rust
 import std/random { Rng }
 
 let rng = Rng.new(42)
@@ -81,7 +83,7 @@ let id = Uuid.v4_with(rng)       // deterministic given the seed
 - **`Ord`**: order with `compare`, and sort with [std/cmp](https://martian56.github.io/raven/v2/guide/stdlib/cmp/).
 - **`Hash`**: use a `Uuid` as a `Map` or `Set` key.
 
-```raven
+```rust
 import std/collections
 import "github.com/martian56/raven-uuid" { Uuid }
 
