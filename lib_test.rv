@@ -1,14 +1,14 @@
-import std/random { Rng }
-import std/test { assert_eq_int, assert_eq_str, assert_msg, assert_true }
-import "./lib" { Uuid }
+from std.random import Rng
+from std.test import assert_eq_int, assert_eq_str, assert_msg, assert_true
+from "./lib" import Uuid
 
-fun must_parse(value: String) -> Uuid {
+fun must_parse(value: str) -> Uuid {
     return match Uuid.parse(value) {
-        Ok(uuid) -> uuid,
-        Err(message) -> {
+        case Ok(uuid) { uuid }
+        case Err(message) {
             __panic(message)
             Uuid.nil()
-        },
+        }
     }
 }
 
@@ -16,9 +16,9 @@ fun test_nil_and_max_have_stable_forms() {
     let nil = Uuid.nil()
     let max = Uuid.max()
     assert_true(nil.is_nil())
-    assert_true(!nil.is_max())
+    assert_true(not nil.is_max())
     assert_true(max.is_max())
-    assert_true(!max.is_nil())
+    assert_true(not max.is_nil())
     assert_eq_str(nil.to_string(), "00000000-0000-0000-0000-000000000000")
     assert_eq_str(max.simple(), "ffffffffffffffffffffffffffffffff")
 }
@@ -36,16 +36,16 @@ fun test_parse_accepts_canonical_bare_and_uppercase_forms() {
 
 fun test_parse_rejects_bad_lengths_hex_and_hyphen_positions() {
     match Uuid.parse("550e8400-e29b-41d4-a716") {
-        Ok(_) -> assert_msg(false, "short UUID unexpectedly parsed"),
-        Err(_) -> assert_true(true),
+        case Ok(_) { assert_msg(false, "short UUID unexpectedly parsed") }
+        case Err(_) { assert_true(true) }
     }
     match Uuid.parse("550e8400-e29b-41d4-a716-44665544000z") {
-        Ok(_) -> assert_msg(false, "non-hex UUID unexpectedly parsed"),
-        Err(_) -> assert_true(true),
+        case Ok(_) { assert_msg(false, "non-hex UUID unexpectedly parsed") }
+        case Err(_) { assert_true(true) }
     }
     match Uuid.parse("550e8400e-29b-41d4-a716-446655440000") {
-        Ok(_) -> assert_msg(false, "misplaced hyphen unexpectedly parsed"),
-        Err(message) -> assert_msg(message.contains("hyphens"), message),
+        case Ok(_) { assert_msg(false, "misplaced hyphen unexpectedly parsed") }
+        case Err(message) { assert_msg(message.contains("hyphens"), message) }
     }
 }
 

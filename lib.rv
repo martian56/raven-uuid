@@ -2,24 +2,24 @@
 // Versions v1, v4, v7. The no-argument forms seed from entropy and read
 // the clock; the *_with forms take an explicit Rng for reproducible output.
 
-import std/string
-import std/random { Rng }
-import std/time { now_millis }
+import std.string
+from std.random import Rng
+from std.time import now_millis
 
-struct Uuid {
-    bytes: List<Int>,
+class Uuid {
+    bytes: list[int]
 }
 
 // 100ns intervals between the Gregorian epoch (1582-10-15) and the Unix epoch.
-fun gregorian_offset() -> Int {
+fun gregorian_offset() -> int {
     return 122192928000000000
 }
 
-fun hex_digits() -> List<String> {
+fun hex_digits() -> list[str] {
     return ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"]
 }
 
-fun byte_hex(b: Int) -> String {
+fun byte_hex(b: int) -> str {
     let d = hex_digits()
     let hi = d[(b >> 4) & 15]
     let lo = d[b & 15]
@@ -27,22 +27,22 @@ fun byte_hex(b: Int) -> String {
 }
 
 // Hex character (as an ASCII byte) to its value, or -1 if not hex.
-fun nibble_of(b: Int) -> Int {
-    if b >= 48 && b <= 57 {
+fun nibble_of(b: int) -> int {
+    if b >= 48 and b <= 57 {
         return b - 48
     }
-    if b >= 97 && b <= 102 {
+    if b >= 97 and b <= 102 {
         return b - 87
     }
-    if b >= 65 && b <= 70 {
+    if b >= 65 and b <= 70 {
         return b - 55
     }
     return -1
 }
 
-fun rand_bytes(rng: Rng, count: Int) -> List<Int> {
-    let out: List<Int> = []
-    let i = 0
+fun rand_bytes(rng: Rng, count: int) -> list[int] {
+    let out: list[int] = []
+    var i = 0
     while i < count {
         out.push(rng.gen_range(0, 256))
         i += 1
@@ -50,9 +50,9 @@ fun rand_bytes(rng: Rng, count: Int) -> List<Int> {
     return out
 }
 
-fun zero_bytes(value: Int) -> List<Int> {
-    let out: List<Int> = []
-    let i = 0
+fun zero_bytes(value: int) -> list[int] {
+    let out: list[int] = []
+    var i = 0
     while i < 16 {
         out.push(value)
         i += 1
@@ -62,11 +62,11 @@ fun zero_bytes(value: Int) -> List<Int> {
 
 impl Uuid {
     fun nil() -> Uuid {
-        return Uuid { bytes: zero_bytes(0) }
+        return Uuid(bytes: zero_bytes(0))
     }
 
     fun max() -> Uuid {
-        return Uuid { bytes: zero_bytes(255) }
+        return Uuid(bytes: zero_bytes(255))
     }
 
     fun v4() -> Uuid {
@@ -85,11 +85,11 @@ impl Uuid {
         let b = rand_bytes(rng, 16)
         b[6] = (b[6] & 15) | 64
         b[8] = (b[8] & 63) | 128
-        return Uuid { bytes: b }
+        return Uuid(bytes: b)
     }
 
     // 48-bit big-endian millisecond timestamp, then random bits.
-    fun v7_with(rng: Rng, unix_ms: Int) -> Uuid {
+    fun v7_with(rng: Rng, unix_ms: int) -> Uuid {
         let b = rand_bytes(rng, 16)
         b[0] = (unix_ms >> 40) & 255
         b[1] = (unix_ms >> 32) & 255
@@ -99,12 +99,12 @@ impl Uuid {
         b[5] = unix_ms & 255
         b[6] = (b[6] & 15) | 112
         b[8] = (b[8] & 63) | 128
-        return Uuid { bytes: b }
+        return Uuid(bytes: b)
     }
 
     // 60-bit timestamp split across time_low/mid/hi, plus a random node
     // whose multicast bit is set to mark it as not a real MAC address.
-    fun v1_with(rng: Rng, unix_ms: Int) -> Uuid {
+    fun v1_with(rng: Rng, unix_ms: int) -> Uuid {
         let ts = unix_ms * 10000 + gregorian_offset()
         let b = rand_bytes(rng, 16)
         b[0] = (ts >> 24) & 255
@@ -117,19 +117,19 @@ impl Uuid {
         b[7] = (ts >> 48) & 255
         b[8] = (b[8] & 63) | 128
         b[10] = b[10] | 1
-        return Uuid { bytes: b }
+        return Uuid(bytes: b)
     }
 
     // Accepts the canonical hyphenated form or a bare 32-hex string.
-    fun parse(s: String) -> Result<Uuid, String> {
+    fun parse(s: str) -> Result[Uuid, str] {
         let n = s.length()
-        if n != 32 && n != 36 {
+        if n != 32 and n != 36 {
             return Err("expected a canonical or bare UUID")
         }
         if n == 36 {
-            let i = 0
+            var i = 0
             while i < n {
-                let separator = i == 8 || i == 13 || i == 18 || i == 23
+                let separator = i == 8 or i == 13 or i == 18 or i == 23
                 let hyphen = __str_byte_at(s, i) == 45
                 if separator != hyphen {
                     return Err("hyphens must use the canonical UUID positions")
@@ -137,8 +137,8 @@ impl Uuid {
                 i += 1
             }
         }
-        let nibbles: List<Int> = []
-        let i = 0
+        let nibbles: list[int] = []
+        var i = 0
         while i < n {
             let c = __str_byte_at(s, i)
             if c != 45 {
@@ -153,25 +153,25 @@ impl Uuid {
         if nibbles.len() != 32 {
             return Err("expected 32 hex digits")
         }
-        let bytes: List<Int> = []
-        let j = 0
+        let bytes: list[int] = []
+        var j = 0
         while j < 32 {
             bytes.push((nibbles[j] << 4) | nibbles[j + 1])
             j += 2
         }
-        return Ok(Uuid { bytes })
+        return Ok(Uuid(bytes: bytes))
     }
 
-    fun version(self) -> Int {
+    fun version(self) -> int {
         return (self.bytes[6] >> 4) & 15
     }
 
-    fun variant(self) -> Int {
+    fun variant(self) -> int {
         return (self.bytes[8] >> 6) & 3
     }
 
-    fun is_nil(self) -> Bool {
-        let i = 0
+    fun is_nil(self) -> bool {
+        var i = 0
         while i < 16 {
             if self.bytes[i] != 0 {
                 return false
@@ -182,8 +182,8 @@ impl Uuid {
     }
 
     // Whether this UUID is the max UUID (all bits set).
-    fun is_max(self) -> Bool {
-        let i = 0
+    fun is_max(self) -> bool {
+        var i = 0
         while i < 16 {
             if self.bytes[i] != 255 {
                 return false
@@ -194,9 +194,9 @@ impl Uuid {
     }
 
     // The 32-hex-digit form with no hyphens, e.g. "550e8400e29b...".
-    fun simple(self) -> String {
-        let out = ""
-        let i = 0
+    fun simple(self) -> str {
+        var out = ""
+        var i = 0
         while i < 16 {
             out = out.concat(byte_hex(self.bytes[i]))
             i += 1
@@ -205,15 +205,15 @@ impl Uuid {
     }
 
     // The RFC 9562 URN form, e.g. "urn:uuid:550e8400-e29b-...".
-    fun urn(self) -> String {
+    fun urn(self) -> str {
         return "urn:uuid:".concat(self.to_string())
     }
 }
 
 // Two UUIDs are equal when all 16 bytes match. This also powers `==`.
 impl Eq for Uuid {
-    fun equals(self, other: Uuid) -> Bool {
-        let i = 0
+    fun equals(self, other: Uuid) -> bool {
+        var i = 0
         while i < 16 {
             if self.bytes[i] != other.bytes[i] {
                 return false
@@ -226,11 +226,11 @@ impl Eq for Uuid {
 
 // The canonical hyphenated lowercase form, used by `print` and `"${uuid}"`.
 impl ToString for Uuid {
-    fun to_string(self) -> String {
-        let out = ""
-        let i = 0
+    fun to_string(self) -> str {
+        var out = ""
+        var i = 0
         while i < 16 {
-            if i == 4 || i == 6 || i == 8 || i == 10 {
+            if i == 4 or i == 6 or i == 8 or i == 10 {
                 out = out.concat("-")
             }
             out = out.concat(byte_hex(self.bytes[i]))
@@ -244,8 +244,8 @@ impl ToString for Uuid {
 // before `other`, zero if equal, positive if after. This matches the order of
 // the canonical string form and lets UUIDs be sorted and compared with `<`/`>`.
 impl Ord for Uuid {
-    fun compare(self, other: Uuid) -> Int {
-        let i = 0
+    fun compare(self, other: Uuid) -> int {
+        var i = 0
         while i < 16 {
             if self.bytes[i] < other.bytes[i] {
                 return -1
@@ -260,12 +260,12 @@ impl Ord for Uuid {
 }
 
 // A polynomial hash over the bytes, reduced modulo a large prime so it stays a
-// non-negative `Int` and never overflows. It is consistent with `equals` (equal
+// non-negative `int` and never overflows. It is consistent with `equals` (equal
 // UUIDs hash equal), so a `Uuid` can be a `Map` or `Set` key.
 impl Hash for Uuid {
-    fun hash(self) -> Int {
-        let h = 0
-        let i = 0
+    fun hash(self) -> int {
+        var h = 0
+        var i = 0
         while i < 16 {
             h = (h * 31 + self.bytes[i]) % 1000000007
             i += 1

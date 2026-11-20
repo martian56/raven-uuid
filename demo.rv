@@ -1,14 +1,14 @@
-import std/io { println }
-import std/random { Rng }
-import std/collections
-import "./lib" { Uuid }
+from std.io import println
+from std.random import Rng
+import std.collections
+from "./lib" import Uuid
 
 fun main() {
     let a = Uuid.v4()
     let b = Uuid.v4()
     println("v4 a    = ${a.to_string()}")
     println("v4 b    = ${b.to_string()}")
-    println("v4 distinct = ${!a.equals(b)}")
+    println("v4 distinct = ${not a.equals(b)}")
     println("v4 ver  = ${a.version()} variant ${a.variant()}")
 
     let t = Uuid.v7()
@@ -28,13 +28,13 @@ fun main() {
 
     let text = a.to_string()
     match Uuid.parse(text) {
-        Ok(back) -> println("roundtrip equals = ${back.equals(a)}"),
-        Err(e) -> println("parse error: ${e}"),
+        case Ok(back) { println("roundtrip equals = ${back.equals(a)}") }
+        case Err(e) { println("parse error: ${e}") }
     }
 
     match Uuid.parse("not-a-uuid") {
-        Ok(_) -> println("unexpectedly parsed"),
-        Err(e) -> println("rejected: ${e}"),
+        case Ok(_) { println("unexpectedly parsed") }
+        case Err(e) { println("rejected: ${e}") }
     }
 
     // Eq: `==` and `!=` work directly.
@@ -45,7 +45,7 @@ fun main() {
     println("a cmp a = ${a.compare(a)}")
 
     // Hash + Eq: a Uuid is a valid Map (and Set) key.
-    let by_id: Map<Uuid, String> = Map.new()
+    let by_id: dict[Uuid, str] = Map.new()
     by_id.set(a, "alpha")
     by_id.set(b, "beta")
     println("map size  = ${by_id.len()}")
