@@ -17,25 +17,25 @@ deferred to a future crypto package.
 
 ```toml
 [dependencies]
-"github.com/martian56/raven-uuid" = "v0.2.1"
+"github.com/martian56/raven-uuid" = "v0.3.0"
 ```
 
 ## Usage
 
 ```rust
-import "github.com/martian56/raven-uuid" { Uuid }
+from "github.com/martian56/raven-uuid" import Uuid
 
 fun main() {
     let id = Uuid.v4()
-    print(id.to_string())        // e.g. 4a81a9ca-f983-4ed2-aad7-df5f73db6ef9
-    print(id.version())          // 4
+    print(id.to_string()) // e.g. 4a81a9ca-f983-4ed2-aad7-df5f73db6ef9
+    print(id.version()) // 4
 
-    let ordered = Uuid.v7()      // time-ordered, uses the system clock
+    let ordered = Uuid.v7() // time-ordered, uses the system clock
     print(ordered.to_string())
 
     match Uuid.parse("4a81a9ca-f983-4ed2-aad7-df5f73db6ef9") {
-        Ok(u) -> print(u.is_nil()),
-        Err(e) -> print(e),
+        case Ok(u) { print(u.is_nil()) }
+        case Err(e) { print(e) }
     }
 }
 ```
@@ -44,10 +44,10 @@ For reproducible output (tests), use the `*_with` forms and seed the `Rng`
 yourself:
 
 ```rust
-import std/random { Rng }
+from std.random import Rng
 
 let rng = Rng.new(42)
-let id = Uuid.v4_with(rng)       // deterministic given the seed
+let id = Uuid.v4_with(rng) // deterministic given the seed
 ```
 
 ## API
@@ -62,7 +62,7 @@ let id = Uuid.v4_with(rng)       // deterministic given the seed
 | `Uuid.v1_with(rng, unix_ms)` | Time-based UUID from an explicit `Rng` and timestamp |
 | `Uuid.nil()` | All-zero UUID |
 | `Uuid.max()` | All-ones UUID |
-| `Uuid.parse(s)` | Parse a hyphenated or bare 32-hex string, returns `Result<Uuid, String>` |
+| `Uuid.parse(s)` | Parse a hyphenated or bare 32-hex string, returns `Result[Uuid, str]` |
 | `u.to_string()` | Canonical `8-4-4-4-12` lowercase hex |
 | `u.simple()` | The 32-hex form with no hyphens |
 | `u.urn()` | The `urn:uuid:...` form |
@@ -84,25 +84,24 @@ let id = Uuid.v4_with(rng)       // deterministic given the seed
 - **`Hash`**: use a `Uuid` as a `Map` or `Set` key.
 
 ```rust
-import std/collections
-import "github.com/martian56/raven-uuid" { Uuid }
+import std.collections
+from "github.com/martian56/raven-uuid" import Uuid
 
 fun main() {
     let a = Uuid.v4()
     let b = Uuid.v4()
-    print(a == b)                       // false
+    print(a == b) // false
 
-    let names: Map<Uuid, String> = Map.new()
-    names.set(a, "alpha")               // Uuid as a key
-    print(names.get_or(a, "missing"))   // alpha
+    let names: dict[Uuid, str] = Map.new()
+    names.set(a, "alpha") // Uuid as a key
+    print(names.get_or(a, "missing")) // alpha
 }
 ```
 
 ## Requirements
 
-The no-argument generators (`v4`, `v7`, `v1`) need **raven >= 2.0.1**, which
-makes `Rng.from_entropy()` return a distinct seed on every call. On older
-toolchains, prefer the `*_with` forms and hold a single long-lived `Rng`.
+Needs Raven 3.0.0 or newer. The no-argument generators (`v4`, `v7`, `v1`)
+seed from `Rng.from_entropy()`, which returns a distinct seed on every call.
 
 ## License
 
