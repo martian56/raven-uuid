@@ -100,9 +100,8 @@ fun main() {
 
 ## Requirements
 
-The no-argument generators (`v4`, `v7`, `v1`) need **raven >= 2.0.1**, which
-makes `Rng.from_entropy()` return a distinct seed on every call. On older
-toolchains, prefer the `*_with` forms and hold a single long-lived `Rng`.
+Needs Raven 3.0.0 or newer. The no-argument generators (`v4`, `v7`, `v1`)
+seed from `Rng.from_entropy()`, which returns a distinct seed on every call.
 
 ## License
 
