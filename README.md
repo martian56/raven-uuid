@@ -17,7 +17,7 @@ deferred to a future crypto package.
 
 ```toml
 [dependencies]
-"github.com/martian56/raven-uuid" = "v0.2.1"
+"github.com/martian56/raven-uuid" = "v0.3.0"
 ```
 
 ## Usage
